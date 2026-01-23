@@ -1,0 +1,50 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { connectDB } from './config/database.js';
+import { errorHandler } from './middleware/auth.js';
+
+import authRoutes from './routes/authRoutes.js';
+import carRoutes from './routes/carRoutes.js';
+import modificationRoutes from './routes/modificationRoutes.js';
+import recommendationRoutes from './routes/recommendationRoutes.js';
+import configuratorRoutes from './routes/configuratorRoutes.js';
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.BACKEND_PORT || 5000;
+
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(
+  cors({
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      process.env.FRONTEND_URL || 'https://topspeed-frontend.vercel.app',
+    ],
+    credentials: true,
+  })
+);
+
+// محاولة الاتصال بـ MongoDB (بدون إعطال البرنامج إذا فشل)
+connectDB().catch(err => {
+  console.warn('⚠️ Database initialization warning');
+});
+
+app.use('/api/auth', authRoutes);
+app.use('/api/cars', carRoutes);
+app.use('/api/modifications', modificationRoutes);
+app.use('/api/recommendations', recommendationRoutes);
+app.use('/api/configurator', configuratorRoutes);
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'Backend is running' });
+});
+
+app.use(errorHandler);
+
+app.listen(PORT, () => {
+  console.log(`✅ TOP SPEED Backend running on http://localhost:${PORT}`);
+});

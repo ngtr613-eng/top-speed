@@ -13,6 +13,8 @@ import serviceRoutes from './routes/serviceRoutes.js';
 
 dotenv.config();
 
+import serverless from 'serverless-http';
+
 const app = express();
 const PORT = process.env.BACKEND_PORT || 5000;
 
@@ -49,6 +51,12 @@ app.get('/api/health', (req, res) => {
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`✅ TOP SPEED Backend running on http://localhost:${PORT}`);
-});
+// Local development: start a server
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`✅ TOP SPEED Backend running on http://localhost:${PORT}`);
+  });
+}
+
+// Export serverless handler for Vercel
+export default serverless(app);

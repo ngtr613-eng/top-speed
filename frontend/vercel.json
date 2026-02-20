@@ -1,5 +1,10 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "vite"
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/icon-192.png", "destination": "/icon-192.svg" },
+    { "source": "/icon-512.png", "destination": "/icon-512.svg" },
+    { "source": "/favicon.ico", "destination": "/icon-192.svg" }
+  ]
 }

@@ -2,11 +2,11 @@
   "name": "top-speed-backend",
   "version": "1.0.0",
   "description": "TOP SPEED Backend API",
-  "main": "src/server.js",
+  "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "start": "node src/server.js",
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
     "build": "echo 'Backend ready for deployment'"
   },
   "dependencies": {

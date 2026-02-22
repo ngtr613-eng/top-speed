@@ -13,31 +13,52 @@ import serviceRoutes from './routes/serviceRoutes.js';
 
 dotenv.config();
 
-import serverless from 'serverless-http';
-
 const app = express();
-const PORT = process.env.BACKEND_PORT || 5000;
+
+// Global database connection status
+let dbConnected = false;
+
+// 1. CORS
+app.use(cors({
+  origin: true,
+  credentials: true,
+}));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(
-  cors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:5175',
-      'http://localhost:3000',
-      process.env.FRONTEND_URL || 'https://top-speed-frontend120.vercel.app',
-      'https://*.vercel.app',
-    ],
-    credentials: true,
-  })
-);
 
-// محاولة الاتصال بـ MongoDB (بدون إعطال البرنامج إذا فشل)
-connectDB().catch(err => {
-  console.warn('⚠️ Database initialization warning');
+// 2. ✅ الـ Health Check (نقلناها هنا عشان ترد فوراً قبل أي تعليقة داتا بيز)
+app.get('/', (req, res) => {
+  res.json({ status: 'Success', message: 'Top Speed API is Live!' });
 });
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'Backend is running', db: dbConnected ? 'connected' : 'connecting' });
+});
+
+// 3. 🔥 Middleware للتحقق من اتصال قاعدة البيانات (بدون انتظار اتصال جديد)
+app.use(async (req, res, next) => {
+  // Skip database check for health endpoints
+  if (req.path === '/' || req.path === '/api/health') {
+    return next();
+  }
+  
+  try {
+    // Only connect if not already connected
+    if (!dbConnected) {
+      await connectDB();
+      dbConnected = true;
+      console.log('Database connected successfully');
+    }
+    next();
+  } catch (error) {
+    console.error('Database connection error:', error);
+    // Still proceed but log the error - don't block requests
+    next();
+  }
+});
+
+// 4. Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/cars', carRoutes);
 app.use('/api/modifications', modificationRoutes);
@@ -45,18 +66,6 @@ app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/configurator', configuratorRoutes);
 app.use('/api/service', serviceRoutes);
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'Backend is running' });
-});
-
 app.use(errorHandler);
 
-// Local development: start a server
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`✅ TOP SPEED Backend running on http://localhost:${PORT}`);
-  });
-}
-
-// Export serverless handler for Vercel
-export default serverless(app);
+export default app;

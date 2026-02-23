@@ -12,6 +12,7 @@ import { SignUpPage } from './pages/SignUpPage';
 import { OTPVerificationPage } from './pages/OTPVerificationPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute } from './components/AdminRoute';
 import { Navigation } from './components/Navigation';
 import { SettingsPanel } from './components/SettingsPanel';
 import './styles/globals.css';
@@ -28,23 +29,28 @@ function App() {
           onClose={() => setIsSettingsPanelOpen(false)} 
         />
         <Routes>
-          {/* Public Auth Routes */}
+          {/* Public Auth Routes - Only accessible without login */}
           <Route path="/" element={<SignUpPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/verify-otp" element={<OTPVerificationPage />} />
           <Route path="/login" element={<LoginPage />} />
 
-          {/* Protected Main Routes */}
+          {/* Protected Main Routes - Only after login */}
           <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/cars" element={<ProtectedRoute><CarsPage /></ProtectedRoute>} />
           <Route path="/car-detail" element={<ProtectedRoute><CarDetailPage /></ProtectedRoute>} />
           <Route path="/purchase" element={<ProtectedRoute><PurchasePage /></ProtectedRoute>} />
           <Route path="/cars-editing" element={<ProtectedRoute><CarsEditingPage /></ProtectedRoute>} />
           <Route path="/service-maintenance" element={<ProtectedRoute><ServiceMaintenancePage /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          
+          {/* Protected Admin Route - Only for admin email */}
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
 
-          {/* Fallback Route */}
+          {/* Fallback Route - Redirect unknown routes to login */}
           <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
+    </Router>
         </Routes>
       </AuthProvider>
     </Router>

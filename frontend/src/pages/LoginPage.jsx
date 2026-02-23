@@ -70,9 +70,9 @@ export const LoginPage = () => {
             <div>
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <label className="block text-white text-xs sm:text-sm font-medium">Password</label>
-                <a href="#" className="text-red-600 hover:text-red-500 text-xs font-medium transition-colors">
+                <Link to="/forgot-password" className="text-red-600 hover:text-red-500 text-xs font-medium transition-colors">
                   Forgot password?
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-600 w-4 h-4" />

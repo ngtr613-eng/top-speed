@@ -543,3 +543,110 @@ export const sendOTPEmail = async (email, userName, otp) => {
     throw error;
   }
 };
+
+export const sendPasswordResetEmail = async (email, userName, resetToken) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: process.env.SMTP_PORT || 587,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER || process.env.EMAIL_USER,
+        pass: process.env.SMTP_PASS || process.env.EMAIL_APP_PASSWORD,
+      },
+      connectionTimeout: 10000,
+      socketTimeout: 10000,
+    });
+
+    await transporter.verify();
+
+    // Build reset link - this will be handled by frontend redirect
+    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+
+    const htmlTemplate = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #000; margin: 0; padding: 20px; }
+            .container { max-width: 500px; margin: 0 auto; background: linear-gradient(135deg, #1a1a1a 0%, #000 100%); border: 1px solid #333; border-radius: 8px; overflow: hidden; }
+            .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); padding: 40px 20px; text-align: center; color: white; }
+            .header h1 { margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 0.5px; }
+            .content { padding: 40px 30px; color: #e5e7eb; }
+            .greeting { font-size: 16px; margin-bottom: 25px; line-height: 1.6; }
+            .greeting strong { color: #fff; }
+            .button-container { text-align: center; margin: 40px 0; }
+            .reset-button { display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: bold; font-size: 16px; transition: all 0.3s ease; }
+            .reset-button:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(220, 38, 38, 0.3); }
+            .token-box { background-color: #111; border: 2px solid #dc2626; border-radius: 8px; padding: 20px; margin: 30px 0; word-break: break-all; }
+            .token-label { font-size: 12px; color: #9ca3af; margin-bottom: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+            .token-code { font-size: 14px; color: #f3f4f6; font-family: 'Courier New', monospace; line-height: 1.6; }
+            .expiry { font-size: 13px; color: #ef4444; margin-top: 15px; font-weight: 500; }
+            .instructions { font-size: 14px; color: #9ca3af; line-height: 1.8; margin-top: 30px; }
+            .footer { background-color: #1a1a1a; padding: 20px 30px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #333; }
+            .footer p { margin: 5px 0; }
+            .warning { background-color: #7f1d1d; border-left: 4px solid #dc2626; padding: 15px; border-radius: 4px; margin-top: 30px; font-size: 13px; color: #fca5a5; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>TOP SPEED</h1>
+            </div>
+            <div class="content">
+              <div class="greeting">
+                Hello <strong>${userName}</strong>,
+                <br><br>
+                We received a request to reset your TOP SPEED account password. Click the button below to create a new password.
+              </div>
+              
+              <div class="button-container">
+                <a href="${resetLink}" class="reset-button">Reset Password</a>
+              </div>
+
+              <div style="text-align: center; color: #9ca3af; font-size: 13px; margin: 20px 0;">
+                or copy and paste this link in your browser:
+              </div>
+
+              <div class="token-box">
+                <div class="token-label">Reset Link</div>
+                <div class="token-code">${resetLink}</div>
+              </div>
+
+              <div class="expiry">🕐 This link expires in 1 hour</div>
+
+              <div class="instructions">
+                <strong>Important:</strong>
+                <br>• This link is for you only - do not share it
+                <br>• You will be asked to create a strong new password
+                <br>• Your current sessions will remain active after password reset
+              </div>
+
+              <div class="warning">
+                ⚠️ If you didn't request a password reset, please ignore this email. Your account is secure and no changes have been made.
+              </div>
+            </div>
+            <div class="footer">
+              <p>TOP SPEED - Car Experience Platform</p>
+              <p>© 2026 All rights reserved</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const mailOptions = {
+      from: process.env.SMTP_USER,
+      to: email,
+      subject: 'Reset Your TOP SPEED Password',
+      html: htmlTemplate,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log('✅ Password reset email sent successfully to:', email);
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Password reset email sending error:', error.message);
+    throw error;
+  }
+};

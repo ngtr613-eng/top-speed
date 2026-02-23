@@ -29,7 +29,10 @@ if (process.env.NODE_ENV !== 'production') {
   }
 
   startServer();
+} else {
+  // For Vercel serverless - export as default handler
+  // Vercel will automatically handle the request/response
+  console.log('Running in Vercel serverless environment');
 }
 
-// For Vercel serverless
 export default app;

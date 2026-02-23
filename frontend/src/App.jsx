@@ -51,9 +51,6 @@ function App() {
         </Routes>
       </AuthProvider>
     </Router>
-        </Routes>
-      </AuthProvider>
-    </Router>
   );
 }
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { carService } from '../services/api';
+import { useVisitorTracking } from '../hooks/useVisitorTracking';
 import { AnimatedCard, PageTransition } from '../components/Animations';
 import { Header, Footer } from '../components/Layout';
 import { Zap, Gauge, Fuel, Wrench } from 'lucide-react';
@@ -249,6 +250,7 @@ const DEFAULT_CARS = [
 ];
 
 export const CarsPage = () => {
+  useVisitorTracking('Cars');
   const navigate = useNavigate();
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { carService, modificationService } from '../services/api';
+import { useVisitorTracking } from '../hooks/useVisitorTracking';
+import { carService, modificationService, visitorService } from '../services/api';
 import { AnimatedCard, PageTransition } from '../components/Animations';
 import { Header, Footer } from '../components/Layout';
 import {
@@ -15,12 +16,17 @@ import {
   DollarSign,
   Car as CarIcon,
   Settings as SettingsIcon,
+  CheckCircle,
+  Users,
+  TrendingUp,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  useVisitorTracking('Admin Dashboard');
   const [cars, setCars] = useState([]);
   const [modifications, setModifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +37,11 @@ export const AdminDashboard = () => {
   const [priceEditingCarId, setPriceEditingCarId] = useState(null);
   const [priceValue, setPriceValue] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [visitorStats, setVisitorStats] = useState(null);
+  const [visitorLoading, setVisitorLoading] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [imageEditingCarId, setImageEditingCarId] = useState(null);
+  const [newImageUrl, setNewImageUrl] = useState('');
 
   const [formData, setFormData] = useState({
     brand: '',
@@ -46,6 +57,7 @@ export const AdminDashboard = () => {
     price: 0,
     description: '',
     imageUrl: '',
+    imageGallery: [],
     engine: {
       displacement: 0,
       cylinders: 0,
@@ -89,6 +101,18 @@ export const AdminDashboard = () => {
     }
   };
 
+  const fetchVisitorStats = async () => {
+    try {
+      setVisitorLoading(true);
+      const res = await visitorService.getVisitorStats(30);
+      setVisitorStats(res.data);
+    } catch (error) {
+      console.error('Failed to fetch visitor stats:', error);
+    } finally {
+      setVisitorLoading(false);
+    }
+  };
+
   const showSuccess = (message) => {
     setSuccessMessage(message);
     setTimeout(() => setSuccessMessage(''), 3000);
@@ -109,6 +133,7 @@ export const AdminDashboard = () => {
       price: 0,
       description: '',
       imageUrl: '',
+      imageGallery: [],
       engine: {
         displacement: 0,
         cylinders: 0,
@@ -188,6 +213,60 @@ export const AdminDashboard = () => {
     }
   };
 
+  const handleImageEdit = (car) => {
+    setImageEditingCarId(car._id);
+    setNewImageUrl('');
+    setShowImageModal(true);
+  };
+
+  const handleAddImageToGallery = async () => {
+    if (!newImageUrl.trim()) {
+      alert('Please enter an image URL');
+      return;
+    }
+
+    try {
+      const car = cars.find((c) => c._id === imageEditingCarId);
+      const imageGallery = car.imageGallery || [];
+
+      // Check if URL already exists
+      if (imageGallery.includes(newImageUrl)) {
+        alert('This image URL already exists in the gallery');
+        return;
+      }
+
+      const updatedCar = {
+        ...car,
+        imageGallery: [...imageGallery, newImageUrl],
+      };
+
+      await carService.updateCar(imageEditingCarId, updatedCar);
+      showSuccess('Image added to gallery!');
+      setNewImageUrl('');
+      fetchData();
+    } catch (error) {
+      console.error('Failed to add image:', error);
+      alert('Error adding image: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleRemoveImageFromGallery = async (carId, imageUrl) => {
+    try {
+      const car = cars.find((c) => c._id === carId);
+      const imageGallery = (car.imageGallery || []).filter((img) => img !== imageUrl);
+
+      await carService.updateCar(carId, {
+        ...car,
+        imageGallery,
+      });
+      showSuccess('Image removed from gallery!');
+      fetchData();
+    } catch (error) {
+      console.error('Failed to remove image:', error);
+      alert('Error removing image: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
   const handleDeleteCar = async (carId) => {
     if (!confirm('Are you sure you want to delete this car? This action cannot be undone.'))
       return;
@@ -218,7 +297,10 @@ export const AdminDashboard = () => {
               exit={{ opacity: 0, y: -10 }}
               className="mb-4 sm:mb-6 p-3 sm:p-4 bg-green-900/20 border border-green-600 text-green-400 rounded-lg text-sm sm:text-base"
             >
-              ✓ {successMessage}
+              <div className="flex items-center gap-2">
+                <CheckCircle size={18} className="flex-shrink-0" />
+                <span>{successMessage}</span>
+              </div>
             </motion.div>
           )}
 
@@ -266,6 +348,21 @@ export const AdminDashboard = () => {
                   <SettingsIcon className="inline mr-1 sm:mr-2" size={16} />
                   <span className="hidden sm:inline">Modifications</span>
                   <span className="sm:hidden">Mods</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('visitors');
+                    fetchVisitorStats();
+                  }}
+                  className={`px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm md:text-base font-semibold border-b-2 transition whitespace-nowrap ${
+                    activeTab === 'visitors'
+                      ? 'border-red-600 text-white'
+                      : 'border-transparent text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Users className="inline mr-1 sm:mr-2" size={16} />
+                  <span className="hidden sm:inline">Visitors</span>
+                  <span className="sm:hidden">Visitors</span>
                 </button>
               </div>
 
@@ -582,6 +679,7 @@ export const AdminDashboard = () => {
                             }
                             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-red-600 focus:outline-none transition"
                           />
+                          <p className="text-xs text-gray-400 mt-1">This is the main image displayed on the car list</p>
                         </div>
 
                         {/* Description */}
@@ -697,6 +795,14 @@ export const AdminDashboard = () => {
                               >
                                 <DollarSign size={14} />
                                 <span className="hidden sm:inline">Price</span>
+                              </button>
+                              <button
+                                onClick={() => handleImageEdit(car)}
+                                className="flex-1 min-w-12 px-2 sm:px-4 py-2 bg-purple-900/30 hover:bg-purple-800/50 text-purple-400 rounded-lg transition flex items-center justify-center gap-1 text-xs sm:text-sm"
+                                title="Edit Images"
+                              >
+                                <ImageIcon size={14} />
+                                <span className="hidden sm:inline">Images</span>
                               </button>
                               <button
                                 onClick={() => handleEditCar(car)}
@@ -859,6 +965,133 @@ export const AdminDashboard = () => {
                   </div>
                 </div>
               )}
+
+              {/* VISITORS TAB */}
+              {activeTab === 'visitors' && (
+                <div>
+                  {visitorLoading ? (
+                    <div className="text-center py-12">
+                      <div className="w-12 h-12 border-4 border-gray-700 border-t-red-600 rounded-full animate-spin mx-auto"></div>
+                      <p className="text-gray-400 mt-4">Loading visitor data...</p>
+                    </div>
+                  ) : visitorStats ? (
+                    <div className="space-y-6">
+                      {/* Stats Overview */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <AnimatedCard>
+                          <div className="text-center">
+                            <Users size={32} className="mx-auto text-blue-400 mb-3" />
+                            <p className="text-gray-400 text-sm mb-1">Total Visits (Last 30 days)</p>
+                            <p className="text-3xl font-bold text-white">{visitorStats.totalVisitors}</p>
+                          </div>
+                        </AnimatedCard>
+                        <AnimatedCard>
+                          <div className="text-center">
+                            <TrendingUp size={32} className="mx-auto text-green-400 mb-3" />
+                            <p className="text-gray-400 text-sm mb-1">Unique Visitors</p>
+                            <p className="text-3xl font-bold text-white">{visitorStats.uniqueVisitors}</p>
+                          </div>
+                        </AnimatedCard>
+                        <AnimatedCard>
+                          <div className="text-center">
+                            <Eye size={32} className="mx-auto text-purple-400 mb-3" />
+                            <p className="text-gray-400 text-sm mb-1">Average per Day</p>
+                            <p className="text-3xl font-bold text-white">{Math.round(visitorStats.totalVisitors / 30)}</p>
+                          </div>
+                        </AnimatedCard>
+                      </div>
+
+                      {/* Page Visits */}
+                      <AnimatedCard>
+                        <h3 className="text-lg font-bold text-white mb-4">Top Pages</h3>
+                        <div className="space-y-3">
+                          {visitorStats.pageVisits && visitorStats.pageVisits.length > 0 ? (
+                            visitorStats.pageVisits.map((page, idx) => (
+                              <div key={idx} className="flex items-center justify-between">
+                                <span className="text-gray-300">{page.page}</span>
+                                <div className="flex items-center gap-3">
+                                  <div className="w-24 bg-gray-800 rounded-full h-2">
+                                    <div
+                                      className="bg-red-600 h-2 rounded-full"
+                                      style={{
+                                        width: `${(page.count / visitorStats.totalVisitors) * 100}%`,
+                                      }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-red-400 font-semibold w-12 text-right">{page.count}</span>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-gray-500">No data available</p>
+                          )}
+                        </div>
+                      </AnimatedCard>
+
+                      {/* Browser Stats */}
+                      <AnimatedCard>
+                        <h3 className="text-lg font-bold text-white mb-4">Browsers</h3>
+                        <div className="space-y-2">
+                          {visitorStats.browsers && visitorStats.browsers.length > 0 ? (
+                            visitorStats.browsers.map((b, idx) => (
+                              <div key={idx} className="flex justify-between text-sm">
+                                <span className="text-gray-300">{b.browser || 'Unknown'}</span>
+                                <span className="text-blue-400 font-semibold">{b.count}</span>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-gray-500">No data available</p>
+                          )}
+                        </div>
+                      </AnimatedCard>
+
+                      {/* Recent Visitors */}
+                      <div>
+                        <h3 className="text-lg font-bold text-white mb-4">Recent Visitors</h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs sm:text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-800">
+                                <th className="text-left py-3 px-3 text-gray-300 font-semibold">Page</th>
+                                <th className="text-left py-3 px-3 text-gray-300 font-semibold hidden sm:table-cell">Browser</th>
+                                <th className="text-left py-3 px-3 text-gray-300 font-semibold hidden md:table-cell">OS</th>
+                                <th className="text-left py-3 px-3 text-gray-300 font-semibold">Time</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {visitorStats.recentVisitors && visitorStats.recentVisitors.length > 0 ? (
+                                visitorStats.recentVisitors.map((visitor, idx) => (
+                                  <tr key={idx} className="border-b border-gray-800 hover:bg-gray-900/30 transition">
+                                    <td className="py-3 px-3 text-white">{visitor.page}</td>
+                                    <td className="py-3 px-3 text-gray-400 hidden sm:table-cell text-xs">{visitor.browser}</td>
+                                    <td className="py-3 px-3 text-gray-400 hidden md:table-cell text-xs">{visitor.osType}</td>
+                                    <td className="py-3 px-3 text-gray-400 text-xs">
+                                      {new Date(visitor.createdAt).toLocaleTimeString()}
+                                    </td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td colSpan="4" className="py-4 text-center text-gray-500">
+                                    No visitor data available
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 bg-gray-900/50 border border-gray-800 rounded-lg">
+                      <Users size={48} className="mx-auto text-gray-600 mb-4" />
+                      <p className="text-gray-400 text-lg">No visitor data available</p>
+                      <p className="text-gray-500 text-sm mt-2">Visitors will appear here once the tracking system collects data</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
             </>
           )}
         </div>
@@ -901,6 +1134,93 @@ export const AdminDashboard = () => {
                   className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-2 sm:py-3 rounded-lg font-semibold transition text-sm sm:text-base"
                 >
                   Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Image Gallery Modal */}
+        {showImageModal && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-gray-900 border border-gray-800 rounded-lg p-4 sm:p-8 max-w-2xl w-full my-8"
+            >
+              <h3 className="text-lg sm:text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                <ImageIcon size={24} />
+                Manage Car Images
+              </h3>
+              
+              {/* Add new image */}
+              <div className="mb-6">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
+                  Add Image URL
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="url"
+                    value={newImageUrl}
+                    onChange={(e) => setNewImageUrl(e.target.value)}
+                    className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-red-600 focus:outline-none transition text-sm sm:text-base"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  <button
+                    onClick={handleAddImageToGallery}
+                    className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-semibold transition text-sm sm:text-base"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {/* Current images in gallery */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-300 mb-3">Image Gallery</h4>
+                {imageEditingCarId && cars.find((c) => c._id === imageEditingCarId)?.imageGallery?.length > 0 ? (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {cars.find((c) => c._id === imageEditingCarId)?.imageGallery.map((img, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-400 truncate">{img}</p>
+                          <img
+                            src={img}
+                            alt={`Car gallery ${idx}`}
+                            className="w-full h-24 object-cover rounded mt-2 bg-gray-700"
+                            onError={(e) => {
+                              e.target.src =
+                                'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23333" width="100" height="100"/><text x="50" y="50" text-anchor="middle" dy=".3em" fill="%23999" font-size="12">Image Error</text></svg>';
+                            }}
+                          />
+                        </div>
+                        <button
+                          onClick={() => handleRemoveImageFromGallery(imageEditingCarId, img)}
+                          className="ml-3 p-2 bg-red-900/30 hover:bg-red-800/50 text-red-400 rounded-lg transition flex-shrink-0"
+                          title="Remove image"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-6">
+                    No images in gallery yet. Add one above!
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6">
+                <button
+                  onClick={() => {
+                    setShowImageModal(false);
+                    setImageEditingCarId(null);
+                    setNewImageUrl('');
+                  }}
+                  className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-2 sm:py-3 rounded-lg font-semibold transition text-sm sm:text-base"
+                >
+                  Close
                 </button>
               </div>
             </motion.div>

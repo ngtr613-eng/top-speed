@@ -1,0 +1,37 @@
+name: Add Vercel Domain
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploymentUrl:
+        description: 'Full deployment URL to alias (e.g., frontend-kappa-beige-dtj8kobtv0.vercel.app)'
+        required: true
+
+jobs:
+  add-domain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel
+
+      - name: Add topspeed.vercel.app domain
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -e
+          vercel domains add topspeed.vercel.app --token $VERCEL_TOKEN || echo "Domain add failed or already exists"
+
+      - name: Create alias from deployment to topspeed.vercel.app
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -e
+          vercel alias set "${{ github.event.inputs.deploymentUrl }}" topspeed.vercel.app --token $VERCEL_TOKEN

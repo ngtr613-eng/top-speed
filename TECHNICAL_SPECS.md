@@ -612,7 +612,7 @@ cors({
   origin: [
     'http://localhost:5173',      // Dev
     'http://localhost:3000',      // Alt dev
-    'https://topspeed-frontend.vercel.app' // Prod
+    'https://topspeed.vercel.app' // Prod
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],

@@ -1,32 +1,66 @@
 import nodemailer from 'nodemailer';
 
+// Helper: create a transporter with pooling for higher throughput
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587,
+    secure: process.env.SMTP_SECURE === 'true' || false,
+    auth: {
+      user: process.env.SMTP_USER || process.env.EMAIL_USER,
+      pass: process.env.SMTP_PASS || process.env.EMAIL_APP_PASSWORD,
+    },
+    pool: true,
+    maxConnections: process.env.SMTP_MAX_CONNECTIONS ? parseInt(process.env.SMTP_MAX_CONNECTIONS, 10) : 5,
+    maxMessages: process.env.SMTP_MAX_MESSAGES ? parseInt(process.env.SMTP_MAX_MESSAGES, 10) : 100,
+    connectionTimeout: 20000,
+    socketTimeout: 20000,
+    tls: { rejectUnauthorized: false },
+  });
+};
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const sendMailWithRetries = async (transporter, mailOptions) => {
+  const maxAttempts = process.env.EMAIL_RETRY_COUNT ? parseInt(process.env.EMAIL_RETRY_COUNT, 10) : 3;
+  let attempt = 0;
+  let lastErr = null;
+
+  while (attempt < maxAttempts) {
+    try {
+      attempt += 1;
+      if (attempt > 1) console.log(`📧 Retry attempt ${attempt} for ${mailOptions.to}`);
+      const info = await transporter.sendMail(mailOptions);
+      console.log('✅ Email sent:', info && info.messageId ? info.messageId : '(no messageId)');
+      return info;
+    } catch (err) {
+      lastErr = err;
+      console.error(`❌ Email send attempt ${attempt} failed:`, err && err.message ? err.message : err);
+      // exponential backoff
+      const backoff = Math.min(2000 * Math.pow(2, attempt - 1), 15000);
+      await sleep(backoff);
+      // continue to next attempt
+    }
+  }
+
+  // All attempts failed
+  throw lastErr;
+};
+
 export const sendModificationRequestEmail = async (requestData) => {
   try {
     console.log('📧 Starting to send modification request email...');
     console.log('📧 SMTP User:', process.env.SMTP_USER ? '✓ Set' : '❌ Not set');
     console.log('📧 SMTP Pass:', process.env.SMTP_PASS ? '✓ Set' : '❌ Not set');
     console.log('📧 Team Email:', process.env.TEAM_EMAIL ? process.env.TEAM_EMAIL : '❌ Not set');
-
-    // Create transporter using Gmail SMTP configuration
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT || 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.SMTP_USER || process.env.EMAIL_USER,
-        pass: process.env.SMTP_PASS || process.env.EMAIL_APP_PASSWORD,
-      },
-      connectionTimeout: 10000,
-      socketTimeout: 10000,
-    });
-
-    // Verify transporter connection
+    // Create transporter with pooling and retry logic
+    const transporter = createTransporter();
     try {
       await transporter.verify();
-      console.log('✅ SMTP connection verified successfully');
+      console.log('✅ SMTP connection verified successfully (pool)');
     } catch (verifyError) {
-      console.error('❌ SMTP connection failed:', verifyError.message);
-      throw new Error('SMTP connection failed: ' + verifyError.message);
+      console.error('❌ SMTP connection failed (pool):', verifyError && verifyError.message ? verifyError.message : verifyError);
+      throw new Error('SMTP connection failed: ' + (verifyError && verifyError.message ? verifyError.message : verifyError));
     }
 
     // Selected modifications
@@ -157,7 +191,7 @@ This request was submitted on ${new Date().toLocaleString()}
 
     // Send email to admin
     console.log('📧 Sending email to admin:', process.env.TEAM_EMAIL || process.env.SMTP_USER);
-    await transporter.sendMail({
+    await sendMailWithRetries(transporter, {
       from: process.env.SMTP_USER || process.env.EMAIL_USER,
       to: process.env.TEAM_EMAIL || process.env.SMTP_USER || process.env.EMAIL_USER,
       subject: `New Car Modification Request - ${requestData.clientName}`,
@@ -169,7 +203,7 @@ This request was submitted on ${new Date().toLocaleString()}
 
     // Send confirmation email to client
     console.log('📧 Sending confirmation email to client:', requestData.email);
-    await transporter.sendMail({
+    await sendMailWithRetries(transporter, {
       from: process.env.SMTP_USER || process.env.EMAIL_USER,
       to: requestData.email,
       subject: 'TOP SPEED - Your Modification Request Received',
@@ -378,7 +412,7 @@ This request was submitted on ${new Date().toLocaleString()}
 
     // Send email to admin
     console.log('📧 Sending email to admin:', process.env.TEAM_EMAIL || process.env.SMTP_USER);
-    await transporter.sendMail({
+    await sendMailWithRetries(transporter, {
       from: process.env.SMTP_USER || process.env.EMAIL_USER,
       to: process.env.TEAM_EMAIL || process.env.SMTP_USER || process.env.EMAIL_USER,
       subject: `New Maintenance Service Request - ${requestData.clientName}`,
@@ -390,7 +424,7 @@ This request was submitted on ${new Date().toLocaleString()}
 
     // Send confirmation email to client
     console.log('📧 Sending confirmation email to client:', requestData.email);
-    await transporter.sendMail({
+    await sendMailWithRetries(transporter, {
       from: process.env.SMTP_USER || process.env.EMAIL_USER,
       to: requestData.email,
       subject: 'TOP SPEED - Your Maintenance Request Received',
@@ -451,19 +485,13 @@ This request was submitted on ${new Date().toLocaleString()}
 
 export const sendOTPEmail = async (email, userName, otp) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT || 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER || process.env.EMAIL_USER,
-        pass: process.env.SMTP_PASS || process.env.EMAIL_APP_PASSWORD,
-      },
-      connectionTimeout: 10000,
-      socketTimeout: 10000,
-    });
-
-    await transporter.verify();
+    const transporter = createTransporter();
+    try {
+      await transporter.verify();
+    } catch (verifyError) {
+      console.error('❌ SMTP verify failed for OTP email:', verifyError && verifyError.message ? verifyError.message : verifyError);
+      throw verifyError;
+    }
 
     const htmlTemplate = `
       <!DOCTYPE html>
@@ -535,7 +563,7 @@ export const sendOTPEmail = async (email, userName, otp) => {
       html: htmlTemplate,
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMailWithRetries(transporter, mailOptions);
     console.log('✅ OTP email sent successfully to:', email);
     return { success: true };
   } catch (error) {
@@ -546,19 +574,13 @@ export const sendOTPEmail = async (email, userName, otp) => {
 
 export const sendPasswordResetEmail = async (email, userName, resetToken) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT || 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER || process.env.EMAIL_USER,
-        pass: process.env.SMTP_PASS || process.env.EMAIL_APP_PASSWORD,
-      },
-      connectionTimeout: 10000,
-      socketTimeout: 10000,
-    });
-
-    await transporter.verify();
+    const transporter = createTransporter();
+    try {
+      await transporter.verify();
+    } catch (verifyError) {
+      console.error('❌ SMTP verify failed for password reset email:', verifyError && verifyError.message ? verifyError.message : verifyError);
+      throw verifyError;
+    }
 
     // Build reset link - this will be handled by frontend redirect
     const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
@@ -642,7 +664,7 @@ export const sendPasswordResetEmail = async (email, userName, resetToken) => {
       html: htmlTemplate,
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMailWithRetries(transporter, mailOptions);
     console.log('✅ Password reset email sent successfully to:', email);
     return { success: true };
   } catch (error) {

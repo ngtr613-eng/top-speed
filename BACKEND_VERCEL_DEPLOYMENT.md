@@ -79,7 +79,7 @@ vercel --cwd backend --prod
 | `JWT_SECRET` | Your JWT secret key | `your-super-secret-key-123` |
 | `EMAIL_USER` | Gmail address for notifications | `your-email@gmail.com` |
 | `EMAIL_PASSWORD` | Gmail app password (not regular password) | `xxxx xxxx xxxx xxxx` |
-| `FRONTEND_URL` | Your Vercel frontend URL | `https://top-speed-frontend.vercel.app` |
+| `FRONTEND_URL` | Your Vercel frontend URL | `https://topspeed.vercel.app` |
 | `NODE_ENV` | Production environment | `production` |
 
 ### How to Get Gmail App Password
@@ -116,7 +116,7 @@ This is your **Backend API URL**.
 
 ## Step 7: Test the Connection
 
-1. Open your frontend URL: `https://top-speed-frontend.vercel.app`
+1. Open your frontend URL: `https://topspeed.vercel.app`
 2. Try to:
    - Sign up with new account
    - Login with existing account

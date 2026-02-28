@@ -2,7 +2,7 @@
 
 ## 🚀 Live Deployment URLs
 
-- **Frontend:** https://frontend-kappa-beige-dtj8kobtv0.vercel.app
+- **Frontend:** https://topspeed.vercel.app
 - **Backend API:** https://backend-blush-eta-78.vercel.app
 - **GitHub Repository:** https://github.com/ngtr613-eng/top-speed
 

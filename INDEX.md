@@ -269,7 +269,7 @@ Full reference: [backend/API_DOCS.md](backend/API_DOCS.md)
 - Backend: http://localhost:5000
 
 ### Production (Example)
-- Frontend: https://topspeed-frontend.vercel.app
+- Frontend: https://topspeed.vercel.app
 - Backend: https://topspeed-backend.onrender.com
 
 ---

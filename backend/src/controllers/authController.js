@@ -298,17 +298,15 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
     await user.save();
 
-    // Send reset email with token
+    // Send reset email with token. If sending fails, log and still return success to caller
     try {
       await sendPasswordResetEmail(email, user.name, resetToken);
     } catch (emailError) {
-      console.error('Failed to send reset email:', emailError);
-      user.resetPasswordToken = null;
-      user.resetPasswordExpires = null;
-      await user.save();
-      return res.status(500).json({ error: 'Failed to send reset email. Please try again.' });
+      console.error('Failed to send reset email (will not expose this to client):', emailError && emailError.message ? emailError.message : emailError);
+      // Keep token stored so admin can inspect, but notify on logs. Do NOT expose internal error to client.
     }
 
+    // Respond success regardless to avoid leaking account existence and to keep UX working
     res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
   } catch (error) {
     res.status(500).json({ error: error.message });

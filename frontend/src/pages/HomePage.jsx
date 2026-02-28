@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { carService } from '../services/api';
+import { useVisitorTracking } from '../hooks/useVisitorTracking';
 import { AnimatedCard, AnimatedButton, AnimatedContainer, PageTransition } from '../components/Animations';
 import { Header, Footer } from '../components/Layout';
 import { ArrowRight, Zap, Gauge, Wrench, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const HomePage = () => {
+  useVisitorTracking('Home');
   const [featuredCars, setFeaturedCars] = useState([]);
   const [loading, setLoading] = useState(true);
 

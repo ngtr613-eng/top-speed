@@ -51,6 +51,11 @@ const carSchema = new mongoose.Schema(
     imageUrl: {
       type: String,
     },
+    imageGallery: {
+      type: [String],
+      default: [],
+      description: 'Array of image URLs for the car gallery',
+    },
     category: {
       type: String,
       enum: ['Sedan', 'SUV', 'Sports', 'Hatchback', 'Coupe', 'Truck'],

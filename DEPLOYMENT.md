@@ -23,7 +23,7 @@ In Vercel Dashboard:
 vercel --prod
 ```
 
-Your frontend will be live at: `https://topspeed-frontend.vercel.app`
+Your frontend will be live at: `https://topspeed.vercel.app`
 
 ---
 
@@ -93,7 +93,7 @@ db.users.insertOne({
 
 ### Frontend Health Check
 ```bash
-curl https://topspeed-frontend.vercel.app/
+curl https://topspeed.vercel.app/
 ```
 
 ### Backend Health Check

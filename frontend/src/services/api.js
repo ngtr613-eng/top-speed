@@ -64,3 +64,18 @@ export const serviceService = {
   sendMaintenanceRequest: (data) =>
     apiClient.post('/service/send-maintenance-request', data),
 };
+
+export const visitorService = {
+  trackVisitor: (page) => {
+    const headers = {
+      'x-session-id': localStorage.getItem('sessionId') || undefined,
+    };
+    return apiClient.post('/visitors/track', { page }, { headers });
+  },
+  getVisitorStats: (days = 30) =>
+    apiClient.get('/visitors/admin/stats', { params: { days } }),
+  getAllVisitors: (page = 1, limit = 50) =>
+    apiClient.get('/visitors/admin/all', { params: { page, limit } }),
+  deleteOldVisitors: (days = 90) =>
+    apiClient.delete('/visitors/admin/cleanup', { data: { days } }),
+};

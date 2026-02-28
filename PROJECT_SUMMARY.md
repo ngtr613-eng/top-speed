@@ -430,7 +430,7 @@ curl -X POST http://localhost:5000/api/auth/register \
    - Or use Vercel CLI: `vercel --prod`
 
 4. **Result**
-   - URL: `https://topspeed-frontend.vercel.app`
+  - URL: `https://topspeed.vercel.app`
 
 ### Backend Deployment (Render)
 

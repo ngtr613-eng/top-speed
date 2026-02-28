@@ -286,13 +286,9 @@ export const AdminDashboard = () => {
       const dataUrl = e.target.result;
       try {
         // Upload to serverless endpoint which will forward to Cloudinary
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dataUrl }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || data.details || 'Upload failed');
+        // forward upload request to backend via axios instance so baseURL and error handling are consistent
+        const resp = await apiClient.post('/upload', { dataUrl });
+        const data = resp.data;
         // Add the returned remote URL to gallery
         await handleAddImageWithUrl(data.url);
       } catch (err) {

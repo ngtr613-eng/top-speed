@@ -1,6 +1,9 @@
-const cloudinary = require('cloudinary').v2;
+import express from 'express';
+import cloudinary from 'cloudinary';
 
-// Configure cloudinary using CLOUDINARY_URL env var or individual env vars
+const router = express.Router();
+
+// configure Cloudinary using env variable or individual keys
 if (process.env.CLOUDINARY_URL) {
   cloudinary.config({ url: process.env.CLOUDINARY_URL });
 } else {
@@ -11,25 +14,23 @@ if (process.env.CLOUDINARY_URL) {
   });
 }
 
-module.exports = async (req, res) => {
+// POST /api/upload  - expects { dataUrl }
+router.post('/', async (req, res) => {
   try {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
-    }
-
     const { dataUrl } = req.body || {};
     if (!dataUrl) return res.status(400).json({ error: 'Missing dataUrl' });
 
-    // Upload using Cloudinary directly from data URL
     const result = await cloudinary.uploader.upload(dataUrl, {
       folder: 'top-speed/car-gallery',
       resource_type: 'image',
       overwrite: false,
     });
 
-    return res.status(200).json({ url: result.secure_url, raw: result });
+    return res.json({ url: result.secure_url, raw: result });
   } catch (err) {
-    console.error('Upload error:', err);
-    return res.status(500).json({ error: 'Upload failed', details: err.message });
+    console.error('Upload error', err);
+    res.status(500).json({ error: 'Upload failed', details: err.message });
   }
-};
+});
+
+export default router;

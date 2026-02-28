@@ -25,6 +25,7 @@ export const carService = {
   updateCar: (id, data) => apiClient.put(`/cars/${id}`, data),
   deleteCar: (id) => apiClient.delete(`/cars/${id}`),
   importFromAPI: (brand) => apiClient.post('/cars/admin/import', { brand }),
+  uploadImage: (dataUrl) => apiClient.post('/upload', { dataUrl }),
 };
 
 export const modificationService = {

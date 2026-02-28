@@ -1,4 +1,5 @@
-const CACHE_NAME = 'top-speed-v1';
+// use a timestamp so every deployment has a unique cache name
+const CACHE_NAME = 'top-speed-' + Date.now();
 const urlsToCache = [
   '/',
   '/index.html',
@@ -6,6 +7,8 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', (event) => {
+  // activate new service worker immediately
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(urlsToCache);

@@ -46,3 +46,4 @@ build/
 .DS_Store
 *.local
 node_modules 
+.env*.local

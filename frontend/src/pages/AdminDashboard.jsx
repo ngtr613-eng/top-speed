@@ -22,6 +22,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { FaDollarSign, FaImage, FaEdit, FaEye, FaEyeSlash, FaTrashAlt } from 'react-icons/fa';
 
 export const AdminDashboard = () => {
   const { user } = useAuth();
@@ -248,6 +249,62 @@ export const AdminDashboard = () => {
       console.error('Failed to add image:', error);
       alert('Error adding image: ' + (error.response?.data?.error || error.message));
     }
+  };
+
+  // Add image by URL (reusable) so we can call it from file upload flow too
+  const handleAddImageWithUrl = async (url) => {
+    if (!url || !url.trim()) {
+      alert('Please provide an image');
+      return;
+    }
+
+    try {
+      const car = cars.find((c) => c._id === imageEditingCarId);
+      const imageGallery = car.imageGallery || [];
+
+      if (imageGallery.includes(url)) {
+        alert('This image already exists in the gallery');
+        return;
+      }
+
+      const updatedCar = { ...car, imageGallery: [...imageGallery, url] };
+      await carService.updateCar(imageEditingCarId, updatedCar);
+      showSuccess('Image added to gallery!');
+      setNewImageUrl('');
+      fetchData();
+    } catch (error) {
+      console.error('Failed to add image:', error);
+      alert('Error adding image: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  // Read file as data URL and add to gallery
+  const handleFileSelect = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+      const dataUrl = e.target.result;
+      try {
+        // Upload to serverless endpoint which will forward to Cloudinary
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataUrl }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || data.details || 'Upload failed');
+        // Add the returned remote URL to gallery
+        await handleAddImageWithUrl(data.url);
+      } catch (err) {
+        console.error('Upload failed', err);
+        alert('Upload failed: ' + err.message);
+      }
+    };
+    reader.onerror = function (e) {
+      console.error('File read error', e);
+      alert('Failed to read the selected file');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRemoveImageFromGallery = async (carId, imageUrl) => {
@@ -774,12 +831,12 @@ export const AdminDashboard = () => {
                                 </span>
                                 {car.isVisible ? (
                                   <span className="px-2 sm:px-3 py-1 bg-green-900/30 border border-green-600 text-green-400 text-xs rounded-full flex items-center gap-1">
-                                    <Eye size={12} />
+                                    <FaEye size={12} />
                                     <span className="hidden sm:inline">Visible</span>
                                   </span>
                                 ) : (
                                   <span className="px-2 sm:px-3 py-1 bg-gray-800 border border-gray-700 text-gray-400 text-xs rounded-full flex items-center gap-1">
-                                    <EyeOff size={12} />
+                                    <FaEyeSlash size={12} />
                                     <span className="hidden sm:inline">Hidden</span>
                                   </span>
                                 )}
@@ -793,7 +850,7 @@ export const AdminDashboard = () => {
                                 className="flex-1 min-w-12 px-2 sm:px-4 py-2 bg-green-900/30 hover:bg-green-800/50 text-green-400 rounded-lg transition flex items-center justify-center gap-1 text-xs sm:text-sm"
                                 title="Edit Price"
                               >
-                                <DollarSign size={14} />
+                                <FaDollarSign size={14} />
                                 <span className="hidden sm:inline">Price</span>
                               </button>
                               <button
@@ -801,7 +858,7 @@ export const AdminDashboard = () => {
                                 className="flex-1 min-w-12 px-2 sm:px-4 py-2 bg-purple-900/30 hover:bg-purple-800/50 text-purple-400 rounded-lg transition flex items-center justify-center gap-1 text-xs sm:text-sm"
                                 title="Edit Images"
                               >
-                                <ImageIcon size={14} />
+                                <FaImage size={14} />
                                 <span className="hidden sm:inline">Images</span>
                               </button>
                               <button
@@ -809,7 +866,7 @@ export const AdminDashboard = () => {
                                 className="flex-1 min-w-12 px-2 sm:px-4 py-2 bg-blue-900/30 hover:bg-blue-800/50 text-blue-400 rounded-lg transition flex items-center justify-center gap-1 text-xs sm:text-sm"
                                 title="Edit Car"
                               >
-                                <Edit size={14} />
+                                <FaEdit size={14} />
                                 <span className="hidden sm:inline">Edit</span>
                               </button>
                               <button
@@ -820,9 +877,9 @@ export const AdminDashboard = () => {
                                 title="Toggle Visibility"
                               >
                                 {car.isVisible ? (
-                                  <EyeOff size={14} />
+                                  <FaEyeSlash size={14} />
                                 ) : (
-                                  <Eye size={14} />
+                                  <FaEye size={14} />
                                 )}
                                 <span className="hidden sm:inline">{car.isVisible ? 'Hide' : 'Show'}</span>
                               </button>
@@ -831,7 +888,7 @@ export const AdminDashboard = () => {
                                 className="flex-1 min-w-12 px-2 sm:px-4 py-2 bg-red-900/30 hover:bg-red-800/50 text-red-400 rounded-lg transition flex items-center justify-center gap-1 text-xs sm:text-sm"
                                 title="Delete Car"
                               >
-                                <Trash2 size={14} />
+                                <FaTrashAlt size={14} />
                                 <span className="hidden sm:inline">Delete</span>
                               </button>
                             </div>
@@ -1173,6 +1230,26 @@ export const AdminDashboard = () => {
                     Add
                   </button>
                 </div>
+                {/* Or upload a file */}
+                <div className="mt-3">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-300 mb-2">
+                    Or upload image file
+                  </label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files && e.target.files[0];
+                        if (file) handleFileSelect(file);
+                        // reset the input so same file can be selected again if needed
+                        e.target.value = null;
+                      }}
+                      className="text-sm text-gray-300"
+                    />
+                    <p className="text-xs text-gray-500">(will be saved as data URL)</p>
+                  </div>
+                </div>
               </div>
 
               {/* Current images in gallery */}
@@ -1199,7 +1276,7 @@ export const AdminDashboard = () => {
                           className="ml-3 p-2 bg-red-900/30 hover:bg-red-800/50 text-red-400 rounded-lg transition flex-shrink-0"
                           title="Remove image"
                         >
-                          <Trash2 size={16} />
+                          <FaTrashAlt size={16} />
                         </button>
                       </div>
                     ))}

@@ -5,10 +5,6 @@ dotenv.config();
 
 const MONGODB_URI = process.env.DATABASE_URL;
 
-if (!MONGODB_URI) {
-  throw new Error('Please define the DATABASE_URL environment variable');
-}
-
 let cached = global.mongoose;
 
 if (!cached) {
@@ -16,6 +12,10 @@ if (!cached) {
 }
 
 export const connectDB = async () => {
+  if (!MONGODB_URI) {
+    throw new Error('Please define the DATABASE_URL environment variable');
+  }
+
   if (cached.conn) {
     console.log('Using cached database connection');
     return cached.conn;

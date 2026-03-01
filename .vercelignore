@@ -1,0 +1,8 @@
+# Ignore the legacy top-level api folder to avoid creating multiple serverless functions
+api/
+
+# Optional: ignore local dev artifacts and build outputs
+node_modules/
+.env
+frontend/dist/
+backend/node_modules/

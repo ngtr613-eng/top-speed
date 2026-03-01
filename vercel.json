@@ -1,7 +1,20 @@
 {
   "version": 2,
-  "outputDirectory": "frontend/dist",
-  "build": {
-    "env": {}
-  }
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    },
+    {
+      "src": "backend/src/index.js",
+      "use": "@vercel/node",
+      "config": { "maxLambdaSize": "50mb" }
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/backend/src/index.js" },
+    { "src": "/((?!assets|favicon\.ico|robots\.txt|api|sw\.js).*)", "dest": "/frontend/dist/index.html" }
+  ],
+  "env": {}
 }

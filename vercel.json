@@ -3,8 +3,11 @@
   "builds": [
     {
       "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+      "use": "@vercel/vite",
+      "config": { 
+        "buildCommand": "npm run build",
+        "outputDirectory": "dist"
+      }
     },
     {
       "src": "backend/src/index.js",
@@ -14,8 +17,8 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/backend/src/index.js" },
-    { "src": "/", "dest": "/frontend/dist/index.html" },
-    { "src": "/((?!assets|favicon\\.ico|robots\\.txt|api|sw\\.js).*)", "dest": "/frontend/dist/index.html" }
+    { "src": "/", "dest": "/frontend" },
+    { "src": "/((?!assets|favicon\\.ico|robots\\.txt|api|sw\\.js).*)", "dest": "/frontend/index.html" }
   ],
   "env": {}
 }

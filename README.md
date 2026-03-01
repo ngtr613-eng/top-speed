@@ -60,7 +60,7 @@ A production-grade automotive platform featuring a premium car modification webs
 
 ```
 TOP_SPEED/
-├── frontend/                 # React application
+├── frontend/                 # React SPA
 │   ├── src/
 │   │   ├── components/      # Reusable components
 │   │   ├── pages/           # Page components
@@ -70,61 +70,91 @@ TOP_SPEED/
 │   │   ├── utils/           # Utilities
 │   │   ├── styles/          # Global styles
 │   │   └── App.jsx
+│   ├── dist/                # Build output (Vercel static)
+│   ├── public/              # Static assets
 │   └── package.json
-├── backend/                  # Express API
-│   ├── src/
-│   │   ├── routes/          # API routes
-│   │   ├── models/          # Database models
-│   │   ├── controllers/     # Route controllers
-│   │   ├── middleware/      # Express middleware
-│   │   ├── services/        # Business logic
-│   │   ├── config/          # Configuration
-│   │   └── server.js
+├── api/                      # Express API (Vercel Serverless)
+│   ├── index.js             # Express app entrypoint
+│   ├── routes/              # API routes
+│   ├── models/              # Database models
+│   ├── controllers/         # Route controllers
+│   ├── middleware/          # Express middleware
+│   ├── services/            # Business logic
+│   ├── config/              # Configuration
 │   └── package.json
+├── vercel.json              # Vercel deployment config
+├── .vercelignore            # Vercel ignore rules
+├── .gitignore               # Git ignore rules
 └── README.md
 ```
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- MongoDB (local or cloud)
+- Node.js 24+
+- MongoDB (cloud or local)
 - API-Ninjas API key
+- Vercel account (for deployment)
 
-### Installation
+### Local Development Setup
 
-1. Clone the repository
-2. Install dependencies:
-```bash
-npm install
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/ngtr613-eng/top-speed.git
+   cd TOP_SPEED
+   ```
 
-3. Configure environment variables:
-```bash
-cp .env.example .env
-```
+2. **Setup Frontend**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+   Frontend: http://localhost:5173
 
-4. Start development servers:
-```bash
-npm run dev
-```
+3. **Setup API** (in new terminal)
+   ```bash
+   cd api
+   npm install
+   npm run dev
+   ```
+   API: http://localhost:5000
 
-Frontend: http://localhost:5173
-Backend: http://localhost:5000
+4. **Configure Environment Variables**
+   Create `.env` in root:
+   ```
+   MONGODB_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret
+   API_NINJAS_KEY=your_api_ninjas_key
+   CLOUDINARY_NAME=your_cloudinary_name
+   CLOUDINARY_KEY=your_cloudinary_key
+   CLOUDINARY_SECRET=your_cloudinary_secret
+   ```
 
 ## Deployment
 
-### Frontend (Vercel)
+### Deploy to Vercel
+
+The project is optimized for Vercel deployment with:
+- **Frontend:** Served as static site via `@vercel/static-build`
+- **API:** Deployed as serverless function at `/api/*`
+
+**Deploy Steps:**
 ```bash
-npm run build -w frontend
-# Deploy via Vercel CLI or git integration
+# Ensure all changes are committed
+git add .
+git commit -m "Your message"
+git push origin main
+
+# Vercel auto-deploys on push, or manually:
+vercel --prod
 ```
 
-### Backend (Render)
-```bash
-npm run build -w backend
-# Deploy via Render dashboard
-```
+**Deployment URLs:**
+- Frontend: https://top-speed-ts20.vercel.app/
+- API: https://top-speed-ts20.vercel.app/api/
+
+
 
 ## API Endpoints
 

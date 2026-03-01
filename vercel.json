@@ -9,13 +9,13 @@
       }
     },
     {
-      "src": "backend/src/index.js",
+      "src": "api/index.js",
       "use": "@vercel/node",
       "config": { "maxLambdaSize": "50mb" }
     }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/backend/src/index.js" },
+    { "src": "/api/(.*)", "dest": "/api/index.js" },
     { "src": "/", "dest": "/index.html" },
     { "src": "/((?!assets|favicon\\.ico|robots\\.txt|api|sw\\.js).*)", "dest": "/index.html" }
   ],

@@ -21,7 +21,8 @@
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.7",
     "serverless-http": "^2.7.0",
-    "ua-parser-js": "^1.0.37"
+    "ua-parser-js": "^1.0.37",
+    "cloudinary": "^1.40.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

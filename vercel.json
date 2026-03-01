@@ -14,7 +14,7 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/backend/src/index.js" },
-    { "src": "/((?!assets|favicon\.ico|robots\.txt|api|sw\.js).*)", "dest": "/frontend/dist/index.html" }
+    { "src": "/((?!assets|favicon\\.ico|robots\\.txt|api|sw\\.js).*)", "dest": "/frontend/dist/index.html" }
   ],
   "env": {}
 }
